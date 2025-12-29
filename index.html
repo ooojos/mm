@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetroMapper</title>
+  <style>
+        * {
+            margin: 0;
+            padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+            font-family: 'Courier New', Courier, monospace;
+            background: #e6f2ff;
+      min-height: 100vh;
+      display: flex;
+            flex-direction: column;
+      align-items: center;
+      justify-content: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .tile-selection {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .tile-slot {
+            width: 80px;
+            height: 80px;
+            border: 3px dashed #ccc;
+            border-radius: 8px;
+      display: flex;
+      align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .tile-slot:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .tile-slot.selected {
+            border-color: #667eea;
+            border-style: solid;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+        }
+
+        .tile {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-container {
+            display: inline-block;
+            border: 3px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #333;
+    }
+
+    .grid {
+      display: grid;
+            grid-template-columns: repeat(9, 60px);
+            grid-template-rows: repeat(9, 60px);
+            gap: 2px;
+            background: #333;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            background: white;
+      cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cell:hover:not(.station):not(.center) {
+            background: #e0e0e0;
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .cell.placed {
+            background: #f0f0f0;
+        }
+
+        .center {
+            background: #fff;
+            border: 3px solid #333;
+        }
+
+        .center::before {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 2px solid #333;
+            z-index: 2;
+        }
+
+        .center-line {
+            position: absolute;
+            background: #333;
+            z-index: 1;
+        }
+
+        .center-line.up {
+            width: 8px;
+            height: 25px;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: red;
+        }
+
+        .center-line.down {
+            width: 8px;
+            height: 25px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: green;
+        }
+
+        .center-line.left {
+            width: 25px;
+            height: 8px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: blue;
+        }
+
+        .center-line.right {
+            width: 25px;
+            height: 8px;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: yellow;
+        }
+
+        .station {
+            border: 3px solid #333;
+            border-radius: 8px;
+      cursor: default;
+            position: relative;
+        }
+
+        .station.red {
+            background: #ff6b6b;
+        }
+
+        .station.green {
+            background: #51cf66;
+        }
+
+        .station.blue {
+            background: #4dabf7;
+        }
+
+        .station.yellow {
+            background: #ffd43b;
+        }
+
+        .station::before {
+            content: '🚉';
+            font-size: 30px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        .station-line {
+            position: absolute;
+            z-index: 1;
+        }
+
+        .station-line.top-left-vertical {
+            width: 8px;
+            height: 35px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff6b6b;
+        }
+
+        .station-line.top-left-horizontal {
+            width: 35px;
+            height: 8px;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ff6b6b;
+        }
+
+        .station-line.top-right-vertical {
+            width: 8px;
+            height: 35px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #51cf66;
+        }
+
+        .station-line.top-right-horizontal {
+            width: 35px;
+            height: 8px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #51cf66;
+        }
+
+        .station-line.bottom-left-vertical {
+            width: 8px;
+            height: 35px;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4dabf7;
+        }
+
+        .station-line.bottom-left-horizontal {
+            width: 35px;
+            height: 8px;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #4dabf7;
+        }
+
+        .station-line.bottom-right-vertical {
+            width: 8px;
+            height: 35px;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffd43b;
+        }
+
+        .station-line.bottom-right-horizontal {
+            width: 35px;
+            height: 8px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffd43b;
+        }
+
+        .station.connected {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .tile-preview {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Tile path styles */
+        .path {
+            position: absolute;
+        }
+
+        .path.red {
+            background: #ff6b6b;
+        }
+
+        .path.green {
+            background: #51cf66;
+        }
+
+        .path.blue {
+            background: #4dabf7;
+        }
+
+        .path.yellow {
+            background: #ffd43b;
+        }
+
+        .path.horizontal {
+            width: 100%;
+            height: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .path.vertical {
+            width: 8px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .path.top {
+            width: 8px;
+            height: 50%;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .path.bottom {
+            width: 8px;
+            height: 50%;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .path.left {
+            width: 50%;
+            height: 8px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .path.right {
+            width: 50%;
+            height: 8px;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .interchange {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid #333;
+            background: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .path.wild {
+            background: linear-gradient(90deg, 
+                #ff6b6b 0%, #ff6b6b 24.9%, 
+                #51cf66 25%, #51cf66 49.9%, 
+                #4dabf7 50%, #4dabf7 74.9%, 
+                #ffd43b 75%, #ffd43b 100%);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .path.wild.top,
+        .path.wild.bottom {
+            background: linear-gradient(180deg, 
+                #ff6b6b 0%, #ff6b6b 24.9%, 
+                #51cf66 25%, #51cf66 49.9%, 
+                #4dabf7 50%, #4dabf7 74.9%, 
+                #ffd43b 75%, #ffd43b 100%);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .path.wild.left,
+        .path.wild.right {
+            background: linear-gradient(90deg, 
+                #ff6b6b 0%, #ff6b6b 24.9%, 
+                #51cf66 25%, #51cf66 49.9%, 
+                #4dabf7 50%, #4dabf7 74.9%, 
+                #ffd43b 75%, #ffd43b 100%);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .path.wild.vertical {
+            background: linear-gradient(180deg, 
+                #ff6b6b 0%, #ff6b6b 24.9%, 
+                #51cf66 25%, #51cf66 49.9%, 
+                #4dabf7 50%, #4dabf7 74.9%, 
+                #ffd43b 75%, #ffd43b 100%);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .wild-card-indicator {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b 0%, #51cf66 25%, #4dabf7 50%, #ffd43b 75%, #ff6b6b 100%);
+            border: 2px solid #333;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .timer {
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .timer.warning {
+            color: #ff6b6b;
+            animation: pulse 1s infinite;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .overlay.show {
+            display: flex;
+        }
+
+        .overlay-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .overlay-content h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .overlay-content.win h2 {
+            color: #51cf66;
+        }
+
+        .overlay-content.lose h2 {
+            color: #ff6b6b;
+        }
+
+        .overlay-content p {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .overlay-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .overlay-button:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .start-button {
+            background: #51cf66;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .start-button:hover {
+            background: #40b855;
+            transform: scale(1.05);
+        }
+
+        .game-content {
+            display: none;
+        }
+
+        .game-content.active {
+            display: block;
+        }
+
+        .start-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .start-screen h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .start-screen p {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>MetroMapper</h1>
+        
+        <div class="start-screen" id="startScreen">
+            <h2>Welcome!</h2>
+            <p>
+                Connect all 4 corner stations to the center square using colored path tiles.<br>
+                Match colors to connect paths - use interchanges to change colors.<br>
+                Wild cards (rainbow) match any color. You have 3 minutes!<br><br>
+                <strong>Controls:</strong><br>
+                • Click a tile above, then click a cell to place it<br>
+                • Click a placed tile to rotate it 90°<br>
+                • Replacing a tile costs 3 seconds
+            </p>
+            <button class="start-button" id="startButton">Start Game</button>
+        </div>
+        
+        <div class="game-content" id="gameContent">
+            <div class="timer" id="timer">3:00</div>
+            
+            <div class="tile-selection" id="tileSelection">
+                <div class="tile-slot" data-slot="0"></div>
+                <div class="tile-slot" data-slot="1"></div>
+                <div class="tile-slot" data-slot="2"></div>
+                <div class="tile-slot" data-slot="3"></div>
+            </div>
+
+            <div class="grid-container">
+                <div class="grid" id="grid"></div>
+            </div>
+
+            <div class="instructions">
+                Click a tile above, then click a cell on the grid to place it. Connect the center to all 4 corner stations!<br>
+                Click a placed tile to rotate it. Replacing a tile costs 3 seconds.
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="overlay-content" id="overlayContent">
+            <h2 id="overlayTitle">Congratulations!</h2>
+            <p id="overlayMessage">You connected all stations!</p>
+            <button class="overlay-button" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+  <script>
+        const GRID_SIZE = 9;
+        const CENTER_ROW = 4;
+        const CENTER_COL = 4;
+        
+        // Station positions (corners) with colors
+        const STATIONS = [
+            { row: 0, col: 0, color: 'red' },      // top-left
+            { row: 0, col: 8, color: 'green' },    // top-right
+            { row: 8, col: 0, color: 'blue' },     // bottom-left
+            { row: 8, col: 8, color: 'yellow' }    // bottom-right
+        ];
+
+        // Color mapping
+        const COLORS = {
+            red: '#ff6b6b',
+            green: '#51cf66',
+            blue: '#4dabf7',
+            yellow: '#ffd43b'
+        };
+
+        // Tile types: each tile has connections with colors
+        // Path format: { direction: 'top', color: 'red' }
+        // If hasInterchange is true, the tile allows color changes at the center
+        const TILE_TYPES = [
+            // Single color tiles
+            { name: 'straight-vertical-red', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }] },
+            { name: 'straight-vertical-green', paths: [{ dir: 'top', color: 'green' }, { dir: 'bottom', color: 'green' }] },
+            { name: 'straight-vertical-blue', paths: [{ dir: 'top', color: 'blue' }, { dir: 'bottom', color: 'blue' }] },
+            { name: 'straight-vertical-yellow', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'bottom', color: 'yellow' }] },
+            { name: 'straight-horizontal-red', paths: [{ dir: 'left', color: 'red' }, { dir: 'right', color: 'red' }] },
+            { name: 'straight-horizontal-green', paths: [{ dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }] },
+            { name: 'straight-horizontal-blue', paths: [{ dir: 'left', color: 'blue' }, { dir: 'right', color: 'blue' }] },
+            { name: 'straight-horizontal-yellow', paths: [{ dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }] },
+            
+            // Corner tiles (L-shapes)
+            { name: 'corner-top-left-red', paths: [{ dir: 'top', color: 'red' }, { dir: 'left', color: 'red' }] },
+            { name: 'corner-top-right-red', paths: [{ dir: 'top', color: 'red' }, { dir: 'right', color: 'red' }] },
+            { name: 'corner-bottom-left-red', paths: [{ dir: 'bottom', color: 'red' }, { dir: 'left', color: 'red' }] },
+            { name: 'corner-bottom-right-red', paths: [{ dir: 'bottom', color: 'red' }, { dir: 'right', color: 'red' }] },
+            { name: 'corner-top-left-green', paths: [{ dir: 'top', color: 'green' }, { dir: 'left', color: 'green' }] },
+            { name: 'corner-top-right-green', paths: [{ dir: 'top', color: 'green' }, { dir: 'right', color: 'green' }] },
+            { name: 'corner-bottom-left-green', paths: [{ dir: 'bottom', color: 'green' }, { dir: 'left', color: 'green' }] },
+            { name: 'corner-bottom-right-green', paths: [{ dir: 'bottom', color: 'green' }, { dir: 'right', color: 'green' }] },
+            { name: 'corner-top-left-blue', paths: [{ dir: 'top', color: 'blue' }, { dir: 'left', color: 'blue' }] },
+            { name: 'corner-top-right-blue', paths: [{ dir: 'top', color: 'blue' }, { dir: 'right', color: 'blue' }] },
+            { name: 'corner-bottom-left-blue', paths: [{ dir: 'bottom', color: 'blue' }, { dir: 'left', color: 'blue' }] },
+            { name: 'corner-bottom-right-blue', paths: [{ dir: 'bottom', color: 'blue' }, { dir: 'right', color: 'blue' }] },
+            { name: 'corner-top-left-yellow', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'left', color: 'yellow' }] },
+            { name: 'corner-top-right-yellow', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'right', color: 'yellow' }] },
+            { name: 'corner-bottom-left-yellow', paths: [{ dir: 'bottom', color: 'yellow' }, { dir: 'left', color: 'yellow' }] },
+            { name: 'corner-bottom-right-yellow', paths: [{ dir: 'bottom', color: 'yellow' }, { dir: 'right', color: 'yellow' }] },
+            
+            // T-junctions
+            { name: 't-top-red', paths: [{ dir: 'top', color: 'red' }, { dir: 'left', color: 'red' }, { dir: 'right', color: 'red' }] },
+            { name: 't-bottom-red', paths: [{ dir: 'bottom', color: 'red' }, { dir: 'left', color: 'red' }, { dir: 'right', color: 'red' }] },
+            { name: 't-left-red', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'left', color: 'red' }] },
+            { name: 't-right-red', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'right', color: 'red' }] },
+            { name: 't-top-green', paths: [{ dir: 'top', color: 'green' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }] },
+            { name: 't-bottom-green', paths: [{ dir: 'bottom', color: 'green' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }] },
+            { name: 't-left-green', paths: [{ dir: 'top', color: 'green' }, { dir: 'bottom', color: 'green' }, { dir: 'left', color: 'green' }] },
+            { name: 't-right-green', paths: [{ dir: 'top', color: 'green' }, { dir: 'bottom', color: 'green' }, { dir: 'right', color: 'green' }] },
+            { name: 't-top-blue', paths: [{ dir: 'top', color: 'blue' }, { dir: 'left', color: 'blue' }, { dir: 'right', color: 'blue' }] },
+            { name: 't-bottom-blue', paths: [{ dir: 'bottom', color: 'blue' }, { dir: 'left', color: 'blue' }, { dir: 'right', color: 'blue' }] },
+            { name: 't-left-blue', paths: [{ dir: 'top', color: 'blue' }, { dir: 'bottom', color: 'blue' }, { dir: 'left', color: 'blue' }] },
+            { name: 't-right-blue', paths: [{ dir: 'top', color: 'blue' }, { dir: 'bottom', color: 'blue' }, { dir: 'right', color: 'blue' }] },
+            { name: 't-top-yellow', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }] },
+            { name: 't-bottom-yellow', paths: [{ dir: 'bottom', color: 'yellow' }, { dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }] },
+            { name: 't-left-yellow', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'bottom', color: 'yellow' }, { dir: 'left', color: 'yellow' }] },
+            { name: 't-right-yellow', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'bottom', color: 'yellow' }, { dir: 'right', color: 'yellow' }] },
+            
+            // Cross tiles
+            { name: 'cross-red', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'left', color: 'red' }, { dir: 'right', color: 'red' }] },
+            { name: 'cross-green', paths: [{ dir: 'top', color: 'green' }, { dir: 'bottom', color: 'green' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }] },
+            { name: 'cross-blue', paths: [{ dir: 'top', color: 'blue' }, { dir: 'bottom', color: 'blue' }, { dir: 'left', color: 'blue' }, { dir: 'right', color: 'blue' }] },
+            { name: 'cross-yellow', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'bottom', color: 'yellow' }, { dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }] },
+            
+            // Interchange tiles (allow color changes) - Crosses
+            { name: 'interchange-cross-blue-yellow', paths: [{ dir: 'top', color: 'blue' }, { dir: 'bottom', color: 'blue' }, { dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }], hasInterchange: true },
+            { name: 'interchange-cross-red-green', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            { name: 'interchange-cross-red-blue', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'left', color: 'blue' }, { dir: 'right', color: 'blue' }], hasInterchange: true },
+            { name: 'interchange-cross-yellow-green', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'bottom', color: 'yellow' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            { name: 'interchange-cross-red-yellow', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }], hasInterchange: true },
+            { name: 'interchange-cross-blue-green', paths: [{ dir: 'top', color: 'blue' }, { dir: 'bottom', color: 'blue' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            
+            // Interchange T-junctions
+            { name: 'interchange-t-top-blue-yellow', paths: [{ dir: 'top', color: 'blue' }, { dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }], hasInterchange: true },
+            { name: 'interchange-t-bottom-blue-yellow', paths: [{ dir: 'bottom', color: 'blue' }, { dir: 'left', color: 'yellow' }, { dir: 'right', color: 'yellow' }], hasInterchange: true },
+            { name: 'interchange-t-top-red-green', paths: [{ dir: 'top', color: 'red' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            { name: 'interchange-t-bottom-red-green', paths: [{ dir: 'bottom', color: 'red' }, { dir: 'left', color: 'green' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            { name: 'interchange-t-left-red-blue', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'left', color: 'blue' }], hasInterchange: true },
+            { name: 'interchange-t-right-red-blue', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'red' }, { dir: 'right', color: 'blue' }], hasInterchange: true },
+            { name: 'interchange-t-left-yellow-green', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'bottom', color: 'yellow' }, { dir: 'left', color: 'green' }], hasInterchange: true },
+            { name: 'interchange-t-right-yellow-green', paths: [{ dir: 'top', color: 'yellow' }, { dir: 'bottom', color: 'yellow' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            
+            // Interchange corners
+            { name: 'interchange-corner-top-left-red-blue', paths: [{ dir: 'top', color: 'red' }, { dir: 'left', color: 'blue' }], hasInterchange: true },
+            { name: 'interchange-corner-top-right-red-green', paths: [{ dir: 'top', color: 'red' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            { name: 'interchange-corner-bottom-left-yellow-blue', paths: [{ dir: 'bottom', color: 'yellow' }, { dir: 'left', color: 'blue' }], hasInterchange: true },
+            { name: 'interchange-corner-bottom-right-yellow-green', paths: [{ dir: 'bottom', color: 'yellow' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            
+            // Interchange straights
+            { name: 'interchange-straight-red-green', paths: [{ dir: 'left', color: 'red' }, { dir: 'right', color: 'green' }], hasInterchange: true },
+            { name: 'interchange-straight-blue-yellow', paths: [{ dir: 'left', color: 'blue' }, { dir: 'right', color: 'yellow' }], hasInterchange: true },
+            { name: 'interchange-straight-vertical-red-blue', paths: [{ dir: 'top', color: 'red' }, { dir: 'bottom', color: 'blue' }], hasInterchange: true },
+            { name: 'interchange-straight-vertical-green-yellow', paths: [{ dir: 'top', color: 'green' }, { dir: 'bottom', color: 'yellow' }], hasInterchange: true },
+            
+            // Wild card tiles (match any color)
+            { name: 'wild-straight-vertical', paths: [{ dir: 'top', color: 'wild' }, { dir: 'bottom', color: 'wild' }], isWild: true },
+            { name: 'wild-straight-horizontal', paths: [{ dir: 'left', color: 'wild' }, { dir: 'right', color: 'wild' }], isWild: true },
+            { name: 'wild-corner-top-left', paths: [{ dir: 'top', color: 'wild' }, { dir: 'left', color: 'wild' }], isWild: true },
+            { name: 'wild-corner-top-right', paths: [{ dir: 'top', color: 'wild' }, { dir: 'right', color: 'wild' }], isWild: true },
+            { name: 'wild-corner-bottom-left', paths: [{ dir: 'bottom', color: 'wild' }, { dir: 'left', color: 'wild' }], isWild: true },
+            { name: 'wild-corner-bottom-right', paths: [{ dir: 'bottom', color: 'wild' }, { dir: 'right', color: 'wild' }], isWild: true },
+            { name: 'wild-t-top', paths: [{ dir: 'top', color: 'wild' }, { dir: 'left', color: 'wild' }, { dir: 'right', color: 'wild' }], isWild: true },
+            { name: 'wild-t-bottom', paths: [{ dir: 'bottom', color: 'wild' }, { dir: 'left', color: 'wild' }, { dir: 'right', color: 'wild' }], isWild: true },
+            { name: 'wild-t-left', paths: [{ dir: 'top', color: 'wild' }, { dir: 'bottom', color: 'wild' }, { dir: 'left', color: 'wild' }], isWild: true },
+            { name: 'wild-t-right', paths: [{ dir: 'top', color: 'wild' }, { dir: 'bottom', color: 'wild' }, { dir: 'right', color: 'wild' }], isWild: true },
+            { name: 'wild-cross', paths: [{ dir: 'top', color: 'wild' }, { dir: 'bottom', color: 'wild' }, { dir: 'left', color: 'wild' }, { dir: 'right', color: 'wild' }], isWild: true }
+        ];
+
+        let selectedTileSlot = null;
+        let grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
+        let availableTiles = [];
+        let timeRemaining = 180; // 3 minutes in seconds
+        let timerInterval = null;
+        let gameOver = false;
+        let gameStarted = false;
+
+        // Initialize the game (but don't start timer yet)
+        function init() {
+            createGrid();
+            generateTiles();
+            renderTiles();
+            
+            // Set up start button
+            document.getElementById('startButton').addEventListener('click', startGame);
+        }
+
+        function startGame() {
+            if (gameStarted) return;
+            
+            gameStarted = true;
+            // Hide start screen, show game content
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameContent').classList.add('active');
+            
+            // Start the timer
+            startTimer();
+        }
+
+        function startTimer() {
+            updateTimerDisplay(); // Initial display
+            timerInterval = setInterval(() => {
+                if (gameOver) return;
+                
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            const timerElement = document.getElementById('timer');
+            if (timerElement) {
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeRemaining <= 30) {
+                    timerElement.classList.add('warning');
+                } else {
+                    timerElement.classList.remove('warning');
+                }
+            }
+        }
+
+        function addTimePenalty(seconds) {
+            if (gameOver || !gameStarted) return;
+            timeRemaining = Math.max(0, timeRemaining - seconds);
+            updateTimerDisplay();
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            const overlay = document.getElementById('overlay');
+            const overlayContent = document.getElementById('overlayContent');
+            const overlayTitle = document.getElementById('overlayTitle');
+            const overlayMessage = document.getElementById('overlayMessage');
+            
+            if (won) {
+                overlayContent.className = 'overlay-content win';
+                overlayTitle.textContent = 'Congratulations!';
+                overlayMessage.textContent = `You connected all 4 stations with ${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')} remaining!`;
+            } else {
+                overlayContent.className = 'overlay-content lose';
+                overlayTitle.textContent = 'Game Over';
+                overlayMessage.textContent = 'Time ran out! Try again to connect all stations.';
+            }
+            
+            overlay.classList.add('show');
+        }
+
+        function createGrid() {
+            const gridElement = document.getElementById('grid');
+            gridElement.innerHTML = '';
+
+            for (let row = 0; row < GRID_SIZE; row++) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+
+                    // Check if it's the center
+                    if (row === CENTER_ROW && col === CENTER_COL) {
+                        cell.classList.add('center');
+                        const centerSquare = document.createElement('div');
+                        centerSquare.style.cssText = `
+                            position: absolute;
+                            width: 30px;
+                            height: 30px;
+                            background: white;
+                            border: 2px solid #333;
+                            z-index: 2;
+                        `;
+                        cell.appendChild(centerSquare);
+                        
+                        // Add colored lines
+                        ['up', 'down', 'left', 'right'].forEach(direction => {
+                            const line = document.createElement('div');
+                            line.className = `center-line ${direction}`;
+                            cell.appendChild(line);
+                        });
+                    }
+                    // Check if it's a station
+                    else {
+                        const station = STATIONS.find(s => s.row === row && s.col === col);
+                        if (station) {
+                            cell.classList.add('station', station.color);
+                            
+                            // Add lines leaving from station pointing toward center
+                            if (station.row === 0 && station.col === 0) {
+                                // top-left: lines go down and right
+                                const lineV = document.createElement('div');
+                                lineV.className = 'station-line top-left-vertical';
+                                cell.appendChild(lineV);
+                                const lineH = document.createElement('div');
+                                lineH.className = 'station-line top-left-horizontal';
+                                cell.appendChild(lineH);
+                            } else if (station.row === 0 && station.col === 8) {
+                                // top-right: lines go down and left
+                                const lineV = document.createElement('div');
+                                lineV.className = 'station-line top-right-vertical';
+                                cell.appendChild(lineV);
+                                const lineH = document.createElement('div');
+                                lineH.className = 'station-line top-right-horizontal';
+                                cell.appendChild(lineH);
+                            } else if (station.row === 8 && station.col === 0) {
+                                // bottom-left: lines go up and right
+                                const lineV = document.createElement('div');
+                                lineV.className = 'station-line bottom-left-vertical';
+                                cell.appendChild(lineV);
+                                const lineH = document.createElement('div');
+                                lineH.className = 'station-line bottom-left-horizontal';
+                                cell.appendChild(lineH);
+                            } else if (station.row === 8 && station.col === 8) {
+                                // bottom-right: lines go up and left
+                                const lineV = document.createElement('div');
+                                lineV.className = 'station-line bottom-right-vertical';
+                                cell.appendChild(lineV);
+                                const lineH = document.createElement('div');
+                                lineH.className = 'station-line bottom-right-horizontal';
+                                cell.appendChild(lineH);
+                            }
+                        } else {
+                            // All cells (empty or filled) can be clicked
+                            cell.addEventListener('click', () => handleCellClick(row, col));
+                        }
+                    }
+
+                    gridElement.appendChild(cell);
+                }
+            }
+        }
+
+        function generateTiles() {
+            // Always ensure we have 4 tiles available
+            for (let i = 0; i < 4; i++) {
+                if (!availableTiles[i] || availableTiles[i] === null) {
+                    const randomTile = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+                    // Create a proper deep copy
+                    availableTiles[i] = {
+                        name: randomTile.name,
+                        paths: randomTile.paths.map(p => ({ ...p })),
+                        hasInterchange: randomTile.hasInterchange,
+                        isWild: randomTile.isWild
+                    };
+                }
+            }
+        }
+
+        function renderTiles() {
+            const tileSlots = document.querySelectorAll('.tile-slot');
+            tileSlots.forEach((slot, index) => {
+                // Remove old event listeners by cloning
+                const newSlot = slot.cloneNode(true);
+                slot.parentNode.replaceChild(newSlot, slot);
+                
+                newSlot.innerHTML = '';
+                if (availableTiles[index]) {
+                    const tile = createTileElement(availableTiles[index]);
+                    newSlot.appendChild(tile);
+                    newSlot.addEventListener('click', () => selectTileSlot(index));
+                } else {
+                    // Empty slot - still allow clicking to select (though it won't place anything)
+                    newSlot.addEventListener('click', () => selectTileSlot(index));
+                }
+            });
+        }
+
+        function createTileElement(tileType) {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = 'tile-preview';
+            
+            tileType.paths.forEach(pathInfo => {
+                const pathElement = document.createElement('div');
+                if (pathInfo.color === 'wild') {
+                    // Add vertical class for top/bottom paths, horizontal for left/right
+                    const isVertical = pathInfo.dir === 'top' || pathInfo.dir === 'bottom';
+                    pathElement.className = `path ${pathInfo.dir} wild${isVertical ? ' vertical' : ''}`;
+                } else {
+                    pathElement.className = `path ${pathInfo.dir} ${pathInfo.color}`;
+                }
+                tileDiv.appendChild(pathElement);
+            });
+
+            // Add wild card indicator if tile is wild
+            if (tileType.isWild) {
+                const wildIndicator = document.createElement('div');
+                wildIndicator.className = 'wild-card-indicator';
+                tileDiv.appendChild(wildIndicator);
+            }
+            // Add interchange circle if tile has color changes
+            else if (tileType.hasInterchange) {
+                const interchange = document.createElement('div');
+                interchange.className = 'interchange';
+                tileDiv.appendChild(interchange);
+            }
+
+            return tileDiv;
+        }
+
+        function selectTileSlot(index) {
+            // Can't select tiles if game hasn't started or is over
+            if (!gameStarted || gameOver) return;
+            
+            // Remove previous selection
+            document.querySelectorAll('.tile-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+
+            if (selectedTileSlot === index) {
+                selectedTileSlot = null;
+          } else {
+                selectedTileSlot = index;
+                document.querySelector(`[data-slot="${index}"]`).classList.add('selected');
+            }
+        }
+
+        // Rotate a tile 90 degrees clockwise
+        function rotateTile(tile) {
+            if (!tile || !tile.paths) return tile;
+            
+            const rotationMap = {
+                'top': 'right',
+                'right': 'bottom',
+                'bottom': 'left',
+                'left': 'top'
+            };
+            
+            const rotatedTile = {
+                ...tile,
+                paths: tile.paths.map(path => ({
+                    ...path,
+                    dir: rotationMap[path.dir]
+                }))
+            };
+            
+            return rotatedTile;
+        }
+
+        function handleCellClick(row, col) {
+            // Can't interact if game hasn't started or is over
+            if (!gameStarted || gameOver) return;
+            
+            // Can't place on center or stations
+            if ((row === CENTER_ROW && col === CENTER_COL) || 
+                STATIONS.find(s => s.row === row && s.col === col)) {
+                return;
+            }
+
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            const existingTile = grid[row][col];
+
+            // If clicking on an existing tile without a selected tile, rotate it
+            if (existingTile && selectedTileSlot === null) {
+                grid[row][col] = rotateTile(existingTile);
+                
+                // Re-render the rotated tile
+                cell.innerHTML = '';
+                const tileElement = createTileElement(grid[row][col]);
+                cell.appendChild(tileElement);
+                
+                // Check for connections after rotation
+                checkConnections();
+                return;
+            }
+
+            // If a tile is selected, place or replace the tile
+            if (selectedTileSlot === null) {
+                return;
+            }
+
+            // Check if we're replacing a tile (penalty)
+            const isReplacing = existingTile !== null;
+            if (isReplacing) {
+                addTimePenalty(3);
+            }
+
+            // Place or replace the tile
+            const tile = availableTiles[selectedTileSlot];
+            if (!tile) return; // Safety check
+            
+            // Create a deep copy of the tile
+            grid[row][col] = {
+                name: tile.name,
+                paths: tile.paths.map(p => ({ ...p })),
+                hasInterchange: tile.hasInterchange,
+                isWild: tile.isWild
+            };
+            
+            // Render the tile on the grid
+            cell.classList.add('placed');
+            cell.innerHTML = '';
+            const tileElement = createTileElement(grid[row][col]);
+            cell.appendChild(tileElement);
+
+            // Remove the tile from available tiles and generate a new one
+            const randomTile = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+            availableTiles[selectedTileSlot] = {
+                name: randomTile.name,
+                paths: randomTile.paths.map(p => ({ ...p })),
+                hasInterchange: randomTile.hasInterchange,
+                isWild: randomTile.isWild
+            };
+            
+            // Clear selection
+            selectedTileSlot = null;
+            document.querySelectorAll('.tile-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+
+            // Re-render tiles with the new one
+            renderTiles();
+
+            // Check for connections
+            checkConnections();
+        }
+
+        function checkConnections() {
+            let connectedCount = 0;
+            
+            STATIONS.forEach(station => {
+                const stationCell = document.querySelector(
+                    `[data-row="${station.row}"][data-col="${station.col}"]`
+                );
+                
+                const hasConnection = checkPathToStation(station.row, station.col);
+                
+                if (hasConnection) {
+                    stationCell.classList.add('connected');
+                    connectedCount++;
+                } else {
+                    stationCell.classList.remove('connected');
+                }
+            });
+            
+            // Check win condition
+            if (connectedCount === 4 && !gameOver) {
+                endGame(true);
+            }
+        }
+
+        function checkPathToStation(stationRow, stationCol) {
+            // Get the station color - the final connection must match this
+            const station = STATIONS.find(s => s.row === stationRow && s.col === stationCol);
+            const targetColor = station ? station.color : null;
+            if (!targetColor) return false;
+            
+            // BFS to check if there's a path from center to station
+            // Path can start from any center exit and change colors at interchanges
+            // Final connection to station must match station color
+            const visited = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
+            const queue = [{ row: CENTER_ROW, col: CENTER_COL, color: null }];
+            visited[CENTER_ROW][CENTER_COL] = true;
+
+            const directions = {
+                'top': { row: -1, col: 0 },
+                'bottom': { row: 1, col: 0 },
+                'left': { row: 0, col: -1 },
+                'right': { row: 0, col: 1 }
+            };
+
+            const oppositeDir = {
+                'top': 'bottom',
+                'bottom': 'top',
+                'left': 'right',
+                'right': 'left'
+            };
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+
+                // Check center cell - can exit from any of the 4 directions
+                if (current.row === CENTER_ROW && current.col === CENTER_COL) {
+                    Object.keys(directions).forEach(dir => {
+                        const dirInfo = directions[dir];
+                        const newRow = current.row + dirInfo.row;
+                        const newCol = current.col + dirInfo.col;
+                        
+                        if (isValidCell(newRow, newCol) && !visited[newRow][newCol]) {
+                            const cellTile = grid[newRow][newCol];
+                            if (cellTile) {
+                                // Find path that connects in the opposite direction
+                                const connectingPath = cellTile.paths.find(p => p.dir === oppositeDir[dir]);
+                                if (connectingPath) {
+                                    // From center, we can connect to any color (or wildcard/interchange)
+                                    // The path can start from any center exit and change colors
+                                    const isWild = connectingPath.color === 'wild' || cellTile.isWild;
+                                    // Always allow connection from center (can start from any exit)
+                                    visited[newRow][newCol] = true;
+                                    // Track the color we're carrying - use the path's color
+                                    let nextColor = connectingPath.color === 'wild' ? null : connectingPath.color;
+                                    queue.push({ 
+                                        row: newRow, 
+                                        col: newCol, 
+                                        color: nextColor,
+                                        isWild: isWild
+                                    });
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    // Check placed tile
+                    const cellTile = grid[current.row][current.col];
+                    if (cellTile) {
+                        // Check if current tile is wild (from previous step)
+                        const currentIsWild = current.isWild || cellTile.isWild;
+                        const currentColor = current.color;
+                        
+                        for (let i = 0; i < cellTile.paths.length; i++) {
+                            const pathInfo = cellTile.paths[i];
+                            const dir = pathInfo.dir;
+                            const pathColor = pathInfo.color;
+                            const dirVec = directions[dir];
+                            const newRow = current.row + dirVec.row;
+                            const newCol = current.col + dirVec.col;
+                            
+                            if (isValidCell(newRow, newCol) && !visited[newRow][newCol]) {
+                                // Check color compatibility
+                                const pathIsWild = pathColor === 'wild' || cellTile.isWild;
+                                
+                                // Determine if we can traverse this path
+                                let canTraverse = false;
+                                let newColor = pathColor;
+                                
+                                if (cellTile.hasInterchange) {
+                                    // Interchange allows color change - use the path color
+                                    canTraverse = true;
+                                    newColor = pathColor === 'wild' ? currentColor : pathColor;
+                                } else if (pathIsWild || currentIsWild) {
+                                    // Wild card matches any color - keep current color if we have one, otherwise use path color
+                                    canTraverse = true;
+                                    newColor = currentColor !== null ? currentColor : (pathColor === 'wild' ? null : pathColor);
+                                } else if (currentColor === null || pathColor === currentColor) {
+                                    // Colors match (or we're coming from a wildcard with null color)
+                                    canTraverse = true;
+                                    newColor = pathColor === 'wild' ? currentColor : pathColor;
+                                }
+                                
+                                if (!canTraverse) {
+                                    continue;
+                                }
+                                
+                                // Check if we're reaching the station
+                                if (newRow === stationRow && newCol === stationCol) {
+                                    // Final connection must match station color
+                                    // The path color going into the station must match the station's color
+                                    // Wildcards always match
+                                    if (pathIsWild || newColor === targetColor) {
+                                        return true;
+                                    }
+                                    // Color doesn't match and not wild - can't connect to this station
+                                    continue;
+                                } else {
+                                    // Continue to next tile
+                                    const nextTile = grid[newRow][newCol];
+                                    if (nextTile) {
+                                        // Find path that connects in the opposite direction
+                                        const connectingPath = nextTile.paths.find(p => p.dir === oppositeDir[dir]);
+                                        if (connectingPath) {
+                                            const nextIsWild = connectingPath.color === 'wild' || nextTile.isWild;
+                                            
+                                            // Check if colors are compatible
+                                            let canConnect = false;
+                                            let nextColor = newColor;
+                                            
+                                            if (nextTile.hasInterchange) {
+                                                // Interchange allows color change
+                                                canConnect = true;
+                                                nextColor = connectingPath.color === 'wild' ? newColor : connectingPath.color;
+                                            } else if (nextIsWild || pathIsWild) {
+                                                // Wildcard matches any color
+                                                canConnect = true;
+                                                nextColor = newColor;
+                                            } else if (connectingPath.color === newColor) {
+                                                // Colors match
+                                                canConnect = true;
+                                                nextColor = connectingPath.color;
+                                            }
+                                            
+                                            if (canConnect) {
+                                                visited[newRow][newCol] = true;
+                                                queue.push({ 
+                                                    row: newRow, 
+                                                    col: newCol, 
+                                                    color: nextColor,
+                                                    isWild: nextIsWild
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        function isValidCell(row, col) {
+            return row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE;
+        }
+
+        // Initialize the game when page loads
+        init();
+  </script>
+</body>
+</html>
